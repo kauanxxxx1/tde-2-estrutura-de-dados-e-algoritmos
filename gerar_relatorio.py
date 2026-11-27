@@ -23,6 +23,7 @@ with CSV.open(encoding='utf-8', newline='') as f:
 idx = {(int(r['registros']),r['cenario'],r['operacao'],r['versao']):r for r in rows}
 # Informe aqui eventuais correções da Parte 1 que o grupo confirmar.
 CORRECOES_PARTE1 = []
+OBSERVACAO_PARTE1 = ('Na Parte 1, foram utilizados recursos de programação que ainda não haviam sido abordados em sala de aula, o que caracterizou um problema de adequação ao conteúdo da disciplina. A adequação ao conteúdo ministrado foi considerada na evolução para a Parte 2.')
 from xml.sax.saxutils import escape
 import matplotlib
 matplotlib.use('Agg')
@@ -48,7 +49,8 @@ def resumo_tempo(op, n=10000, cenario='aleatorio'):
 ambiente = dict(l.split(': ', 1) for l in (ROOT/'experimentos'/'ambiente.txt').read_text(encoding='utf-8').splitlines() if ': ' in l)
 base_hash = hashlib.sha256((ROOT/'versao_base'/'main.py').read_bytes()).hexdigest()
 assert base_hash == (ROOT/'experimentos'/'hashes.txt').read_text().split()[0], 'Hash da base mudou'
-correcoes = ('Nenhuma correção da Parte 1 foi registrada antes das medições; o arquivo base permanece idêntico ao original fornecido.' if not CORRECOES_PARTE1 else 'Correções antes das medições: ' + '; '.join(CORRECOES_PARTE1))
+correcoes = ('Nenhuma correção de funcionamento da Parte 1 foi registrada antes das medições; o arquivo base permanece idêntico ao original fornecido.' if not CORRECOES_PARTE1 else 'Correções antes das medições: ' + '; '.join(CORRECOES_PARTE1))
+correcoes = OBSERVACAO_PARTE1 + ' ' + correcoes
 
 def evidencias():
     linhas = []
@@ -173,7 +175,7 @@ para('A fila de prioridade retira sempre o elemento de maior prioridade. O heap 
 
 H('3. Metodologia')
 H('3.1 Preservação da versão base e preparação',2)
-para('O código da Parte 1 foi mantido em versao_base/main.py e seu hash SHA-256 foi registrado. A base usa lista de produtos, busca sequencial, Selection Sort no relatório e na fila, além de lista de fornecedores e pilha. ' + escape(correcoes) + ' Repositório: <link href="https://github.com/kauanxxxx1/Tde-2-Algoritmo" color="black">https://github.com/kauanxxxx1/Tde-2-Algoritmo</link>.')
+para('O código da Parte 1 foi mantido em versao_base/main.py e seu hash SHA-256 foi registrado. A base usa lista de produtos, busca sequencial, Selection Sort no relatório e na fila, além de lista de fornecedores e pilha. ' + escape(correcoes) + ' Repositório: <link href="https://github.com/kauanxxxx1/tde-2-estrutura-de-dados-e-algoritmos" color="black">https://github.com/kauanxxxx1/tde-2-estrutura-de-dados-e-algoritmos</link>.')
 H('3.2 Etapas de evolução: decisões, dificuldades, soluções e validação',2)
 H('3.2.1 Cadastro e AVL',2)
 para('Após congelar e medir a base, o cadastro passou a usar ArvoreAVL. O desafio foi preservar os vínculos e alturas durante as rotações: atualizam-se primeiro os filhos, depois a altura do nó que desce e a do novo topo. Na remoção com dois filhos, utiliza-se o sucessor em ordem. O método validar() verifica chaves, alturas, quantidade e balanceamento; os testes cobrem as quatro rotações, duplicatas e remoções.')
