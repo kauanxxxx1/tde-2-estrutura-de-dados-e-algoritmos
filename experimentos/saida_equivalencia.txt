@@ -1,0 +1,1 @@
+Equivalência aprovada: busca, remoção, listagem e fila, inclusive empates (120 casos adicionais).

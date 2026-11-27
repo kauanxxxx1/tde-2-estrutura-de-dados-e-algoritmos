@@ -1,0 +1,6 @@
+sistema: Linux-6.18.57-x86_64-with-glibc2.41
+processador: AMD EPYC 9V74 80-Core Processor
+memoria_total: 6090668 kB
+python: 3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]
+semente: 20261127
+repeticoes: 5
