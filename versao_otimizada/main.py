@@ -190,7 +190,7 @@ class ArvoreAVL:
         return ok and quantidade == self.quantidade
 
 
-# Fila de prioridade implementada manualmente como heap maximo.
+
 class FilaPrioridade:
     def __init__(self):
         self.itens = []
@@ -657,7 +657,7 @@ def mostrar_historico():
         print("Nenhuma movimentação registrada.")
         return
 
-    # Mostramos do topo para a base.
+   
     i = len(historico) - 1
 
     while i >= 0:
