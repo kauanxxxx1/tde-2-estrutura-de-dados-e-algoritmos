@@ -44,4 +44,4 @@ pip install reportlab pillow matplotlib python-docx
 python reproduzir.py
 ```
 
-O gerador lê o CSV, o ambiente e as saídas de terminal, recalcula os ganhos e regenera os gráficos e o PDF, além de uma versão DOCX editável. A versão editável recria o padrão SBC a partir do PDF fornecido; para usar o modelo original, converta o arquivo do professor para `sbc_template.docx` e coloque-o na raiz. A variável `CORRECOES_PARTE1` deve ser confirmada pelo grupo. A base original permanece intacta. Os tempos variam conforme a máquina.
+O gerador lê o CSV, o ambiente e as saídas de terminal, recalcula os ganhos e regenera os gráficos e o PDF, além de uma versão DOCX editável. O arquivo `sbc_template.doc` é o modelo original fornecido pelo professor; `sbc_template.docx` é sua conversão editável, usada como base pelo gerador. O PDF é exportado diretamente do Word preenchido. Instale o LibreOffice (com `soffice` disponível no PATH, ou no local padrão do Windows) para a exportação automática. A variável `CORRECOES_PARTE1` deve ser confirmada pelo grupo. A base original permanece intacta. Os tempos variam conforme a máquina.

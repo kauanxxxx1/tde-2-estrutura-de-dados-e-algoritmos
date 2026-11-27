@@ -90,8 +90,8 @@ else:
     F='Times-Roman'; FB='Times-Bold'; FI='Times-Italic'
 
 # Formatação ajustada conforme o guia SBC fornecido pelo professor.
-# O guia recebido é um PDF de instruções; por isso, este gerador aplica seus
-# parâmetros com ReportLab, mas não substitui o preenchimento do template editável.
+# O conteúdo é montado em elementos ReportLab e exportado para o modelo
+# editável original da SBC, convertido de .doc para .docx.
 doc=SimpleDocTemplate(OUT,pagesize=PAGE,rightMargin=3*cm,leftMargin=3*cm,
                       topMargin=3.5*cm,bottomMargin=2.5*cm,
                       title='Evolução e otimização de um ERP de varejo com árvore AVL, Merge Sort e heap binário',
@@ -259,8 +259,7 @@ refs=[
 ]
 for r in refs: P(r,'RefSBC')
 
-# Exportação editável: sem o arquivo do professor, recria-se a formatação SBC.
-# Se sbc_template.docx estiver na raiz, ele será usado como documento de origem.
+# Exportação sobre o modelo original do professor (convertido de .doc para .docx).
 from docx import Document
 from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -271,17 +270,26 @@ from html.parser import HTMLParser
 
 def exportar_editavel(elementos):
     modelo = ROOT/'sbc_template.docx'
-    d = Document(str(modelo)) if modelo.exists() else Document()
-    if modelo.exists():
-        body = d._element.body
-        for child in list(body):
-            if child.tag != qn('w:sectPr'):
-                body.remove(child)
-    else:
-        sec = d.sections[0]
-        sec.page_width,sec.page_height = Cm(21),Cm(29.7)
-        sec.top_margin,sec.bottom_margin = Cm(3.5),Cm(2.5)
-        sec.left_margin,sec.right_margin = Cm(3),Cm(3)
+    if not modelo.exists():
+        raise FileNotFoundError('Inclua sbc_template.docx, convertido do modelo original do professor.')
+    d = Document(str(modelo))
+    body = d._element.body
+    for child in list(body):
+        if child.tag != qn('w:sectPr'):
+            body.remove(child)
+    sec = d.sections[0]
+    sec.page_width,sec.page_height = Cm(21),Cm(29.7)
+    sec.top_margin,sec.bottom_margin = Cm(3.5),Cm(2.5)
+    sec.left_margin,sec.right_margin = Cm(3),Cm(3)
+    # O modelo original tem uma quebra de seção entre identificação e resumo;
+    # o relatório inteiro usa uma coluna e não tem cabeçalho/rodapé.
+    for tag in ('w:cols','w:headerReference','w:footerReference','w:pgNumType'):
+        for child in sec._sectPr.findall(qn(tag)):
+            sec._sectPr.remove(child)
+    d.styles['Normal'].font.name = 'Times New Roman'
+    d.styles['Normal'].font.size = Pt(12)
+    d.styles['Normal'].paragraph_format.space_after = Pt(0)
+    d.styles['Normal'].paragraph_format.space_before = Pt(6)
     d.core_properties.title = 'Evolução e otimização de um ERP de varejo'
     d.core_properties.author = 'Gabriel Santos Silva, Kauan dos Reis Moreira, Leonardo Maltez'
     class Marcacao(HTMLParser):
@@ -304,12 +312,17 @@ def exportar_editavel(elementos):
     def add(el):
         if isinstance(el, Paragraph):
             st=el.style
-            par=d.add_paragraph()
+            nomes = {'TitleSBC':'Heading','Authors':'Author','Affil':'Address','EmailSBC':'Email','AbstractSBC':'Abstract','Heading1SBC':'Heading 1','Heading2SBC':'Heading 2','CaptionSBC':'Legenda','RefSBC':'Reference'}
+            par=d.add_paragraph(style=nomes.get(st.name,'Normal'))
             par.alignment={TA_CENTER:WD_ALIGN_PARAGRAPH.CENTER,TA_JUSTIFY:WD_ALIGN_PARAGRAPH.JUSTIFY,TA_LEFT:WD_ALIGN_PARAGRAPH.LEFT}.get(st.alignment, WD_ALIGN_PARAGRAPH.LEFT)
             f=par.paragraph_format
             f.space_before=Pt(st.spaceBefore);f.space_after=Pt(st.spaceAfter)
             f.line_spacing=Pt(st.leading)
             if st.name=='CodeSBC': f.keep_together=True
+            if st.name in ('Heading1SBC','Heading2SBC'): f.page_break_before=False
+            if st.name=='Authors': f.space_after=Pt(12)
+            if st.name=='AbstractSBC': f.space_before=Pt(0); f.space_after=Pt(4)
+            if st.name=='CaptionSBC' and len(el.getPlainText())>85: par.alignment=WD_ALIGN_PARAGRAPH.JUSTIFY
             f.first_line_indent=Pt(st.firstLineIndent);f.left_indent=Pt(st.leftIndent);f.right_indent=Pt(st.rightIndent)
             f.keep_with_next=bool(getattr(st,'keepWithNext',False)) or (st.name=='CaptionSBC' and el.getPlainText().startswith('Tabela'))
             if st.name in ('TitleSBC','Authors','Affil','EmailSBC'): f.keep_with_next=True
@@ -330,7 +343,7 @@ def exportar_editavel(elementos):
         elif isinstance(el, KeepTogether):
             for sub in el._content: add(sub)
         elif isinstance(el, Image):
-            par=d.add_paragraph();par.alignment=WD_ALIGN_PARAGRAPH.CENTER;par.paragraph_format.keep_with_next=True
+            par=d.add_paragraph(style='Figure');par.alignment=WD_ALIGN_PARAGRAPH.CENTER;par.paragraph_format.keep_with_next=True
             par.paragraph_format.space_after=Pt(0)
             par.add_run().add_picture(el.filename,width=Pt(el.drawWidth))
         elif isinstance(el, PageBreak): d.add_page_break()
@@ -341,6 +354,18 @@ exportar_editavel(story)
 
 # Build PDF
 
-doc.build(story)
+# O PDF é exportado do próprio Word preenchido, não de uma segunda diagramação.
+import shutil, subprocess, tempfile
+executavel = shutil.which('libreoffice') or shutil.which('soffice')
+if not executavel and os.name == 'nt':
+    for pasta in (os.environ.get('ProgramFiles', ''), os.environ.get('ProgramFiles(x86)', '')):
+        candidato = Path(pasta) / 'LibreOffice' / 'program' / 'soffice.exe'
+        if candidato.is_file():
+            executavel = str(candidato)
+            break
+if not executavel:
+    raise RuntimeError('Instale LibreOffice para exportar o DOCX preenchido em PDF.')
+with tempfile.TemporaryDirectory() as temp:
+    subprocess.run([executavel, '-env:UserInstallation='+Path(temp).as_uri(), '--headless', '--convert-to', 'pdf', '--outdir', str(ROOT), str(ROOT/'relatorio_tecnico.docx')], check=True)
 print(OUT)
 print('bytes',os.path.getsize(OUT))
